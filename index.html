@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kelulusan - MIS KKMI KECAMATAN CARIU</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <style>
+        :root {
+            --navy: #0F172A; --gold: #D4AF37; --islamic-green: #10B981; --danger: #EF4444;
+            --glass-bg: rgba(255, 255, 255, 0.95); --glass-border: rgba(255, 255, 255, 0.2);
+            --text-main: #1E293B; --text-muted: #64748B;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root { --glass-bg: rgba(15, 23, 42, 0.95); --glass-border: rgba(255, 255, 255, 0.1); --text-main: #F8FAFC; --text-muted: #CBD5E1; }
+            body { background: linear-gradient(135deg, #0f172a, #1e293b); }
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: linear-gradient(135deg, #f0f4f8, #d9e2ec); color: var(--text-main); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 20px; overflow-x: hidden; }
+        
+        .glass-container { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); width: 100%; max-width: 950px; padding: 40px; margin-top: 20px; margin-bottom: 20px; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .header { text-align: center; margin-bottom: 30px; }
+        .header img { width: 90px; height: auto; margin-bottom: 15px; }
+        .header h1 { font-size: 1.5rem; color: var(--navy); }
+        .header h2 { font-size: 1rem; color: var(--gold); font-weight: 500; }
+        @media (prefers-color-scheme: dark) { .header h1 { color: #fff; } }
+        
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; background: transparent; border: 2px solid var(--navy); color: var(--navy); font-weight: bold; border-radius: 12px; cursor: pointer; transition: 0.3s; }
+        .tab-btn.active { background: var(--navy); color: white; }
+        @media (prefers-color-scheme: dark) { .tab-btn { border-color: var(--text-muted); color: var(--text-muted); } .tab-btn.active { background: var(--gold); border-color: var(--gold); color: #000; } }
+        
+        .alert-warning { background: rgba(212, 175, 55, 0.15); border: 1px solid var(--gold); color: var(--navy); padding: 15px; border-radius: 12px; margin-bottom: 20px; font-size: 0.95rem; text-align: center; line-height: 1.6; }
+        @media (prefers-color-scheme: dark) { .alert-warning { color: var(--gold); } }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85rem; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: transparent; color: var(--text-main); font-size: 0.95rem; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--gold); outline: none; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .btn-primary { width: 100%; padding: 14px; background: var(--navy); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-primary:hover { background: var(--gold); color: #000; }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-small { padding: 8px 12px; font-size: 0.85rem; border-radius: 8px; }
+        
+        .status-card { text-align: center; padding: 25px; border-radius: 16px; margin: 20px 0; color: white; font-size: 1.3rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .status-lulus { background: linear-gradient(135deg, var(--islamic-green), #059669); }
+        .status-gagal { background: linear-gradient(135deg, var(--danger), #b91c1c); }
+        
+        .table-container { overflow-x: auto; margin-top: 20px; border-radius: 12px; max-height: 400px; overflow-y: auto; }
+        table.modern-table { width: 100%; border-collapse: collapse; min-width: 100%; }
+        table.modern-table th, table.modern-table td { padding: 10px 15px; text-align: left; border-bottom: 1px solid var(--glass-border); font-size: 0.9rem; }
+        table.modern-table th { background: var(--navy); color: white; position: sticky; top: 0; z-index: 5; }
+        
+        .section-title { font-size: 1.1rem; color: var(--gold); margin: 40px 0 15px 0; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border); font-weight:bold; }
+        .import-box { border: 2px dashed var(--gold); padding: 20px; border-radius: 12px; text-align: center; background: rgba(212, 175, 55, 0.05); }
+        #loader { display: none; text-align: center; margin-top: 10px; color: var(--gold); font-weight: bold; }
+        .hidden { display: none !important; }
+        
+        .badge-table-lulus { background: var(--islamic-green); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+        .badge-table-gagal { background: var(--danger); color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+        .code-box { background: rgba(0,0,0,0.05); padding: 4px 8px; border-radius: 4px; font-family: monospace; color: var(--navy); border: 1px solid #cbd5e1; }
+        @media (prefers-color-scheme: dark) { .code-box { background: rgba(255,255,255,0.1); color: var(--gold); border-color: #334155; } }
+    </style>
+</head>
+<body>
+
+    <div class="glass-container">
+        <div class="header">
+            <img alt="Logo MIS AL-KHOERIYAH CILAYA" id="school-logo" src="https://cdn-icons-png.flaticon.com/512/8074/8074805.png">
+            <h1>MIS KKMI KECAMATAN CARIU</h1>
+            <h2>Sistem Pengumuman Kelulusan</h2>
+        </div>
+
+        <div id="login-portal">
+            <div class="tabs">
+                <button class="tab-btn active" id="btnTabSiswa" onclick="switchTab('siswa')" type="button">Portal Siswa</button>
+                <button class="tab-btn" id="btnTabGuru" onclick="switchTab('guru')" type="button">Portal Guru</button>
+            </div>
+
+            <form id="formLoginSiswa">
+                <div class="alert-warning hidden" id="alertSiswaContainer">
+                    ⏳ <strong>PEMBERITAHUAN</strong><br>
+                    <span id="alertSiswaMsg">Memuat informasi jadwal pengumuman...</span>
+                </div>
+                <div class="form-group"><label>Nomor Induk Siswa Nasional (NISN)</label><input id="nisnSiswa" placeholder="Masukkan NISN" required type="text"></div>
+                <div class="form-group"><label>Password (Tanggal Lahir)</label><input id="passSiswa" placeholder="Contoh: 15-08-2010" required type="password"></div>
+                <button class="btn-primary" type="submit">LIHAT HASIL</button>
+            </form>
+
+            <form class="hidden" id="formLoginGuru">
+                <div class="form-group"><label>Username Admin/Guru</label><input id="userGuru" placeholder="Masukkan Username" required type="text"></div>
+                <div class="form-group"><label>Password</label><input id="passGuru" placeholder="Masukkan Password" required type="password"></div>
+                <button class="btn-primary" style="background: var(--islamic-green);" type="submit">MASUK DASHBOARD GURU</button>
+            </form>
+            <div id="loader">Memproses permintaan...</div>
+        </div>
+
+        <div class="hidden" id="dashboard-siswa">
+            <div style="margin-bottom: 20px; line-height: 1.6;">
+                <p><strong>Nama Lengkap:</strong> <span id="view-nama"></span></p>
+                <p><strong>NISN / No. Ujian:</strong> <span id="view-nisn"></span> / <span id="view-noujian"></span></p>
+            </div>
+            
+            <div class="status-card" id="view-status-badge"></div>
+            
+            <div class="table-container">
+                <table class="modern-table">
+                    <thead><tr><th>Mata Pelajaran</th><th>Nilai</th></tr></thead>
+                    <tbody id="view-nilai-table"></tbody>
+                </table>
+            </div>
+
+            <button class="btn-primary" onclick="location.reload()" style="background: var(--text-muted); margin-top: 20px;">Keluar</button>
+        </div>
+
+        <div class="hidden" id="dashboard-guru">
+            <h2 style="text-align:center; color: var(--islamic-green); margin-bottom: 10px;">Dashboard Admin</h2>
+            
+            <div class="section-title">⚙️ Pengaturan Pengumuman</div>
+            <form class="import-box" id="formSettings" style="text-align:left;">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Status Portal Siswa</label>
+                        <select id="set_status" required>
+                            <option value="kunci">🔒 TERKUNCI (Siswa tidak bisa login)</option>
+                            <option value="buka">✅ DIBUKA (Siswa bisa login)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pesan Peringatan (Jika Terkunci)</label>
+                        <input id="set_message" placeholder="Contoh: Akan dibuka pukul 00:00 2 Juni 2026" required type="text">
+                    </div>
+                </div>
+                <button class="btn-primary" style="background: var(--navy); margin-top:0;" type="submit">Simpan Pengaturan</button>
+            </form>
+
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>📋 Data Siswa Tersimpan</span>
+                <button class="btn-primary btn-small" onclick="loadDataAdmin()" style="width: auto; margin-top: 0;" type="button">🔄 Refresh Tabel</button>
+            </div>
+            <div class="table-container">
+                <table class="modern-table">
+                    <thead>
+                        <tr><th>No</th><th>Nama Lengkap</th><th>Kelas</th><th>User (NISN)</th><th>Password</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="admin-table-body">
+                        <tr><td colspan="6" style="text-align: center;">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-title">📤 Import Data Massal (Excel/CSV)</div>
+            <div class="import-box">
+                <p style="margin-bottom: 15px; font-size: 0.9rem;">Gunakan template CSV untuk memasukkan ratusan data siswa sekaligus.</p>
+                <button class="btn-primary" onclick="downloadTemplate()" style="background: var(--gold); color: #000; margin-bottom: 15px;" type="button">⬇ Download Template CSV</button>
+                <input accept=".csv" id="fileCsv" style="margin-bottom: 15px; width: 100%;" type="file">
+                <button class="btn-primary" id="btnUploadCsv" onclick="uploadCsv()" style="background: var(--navy);" type="button">Proses & Simpan Data CSV</button>
+            </div>
+
+            <div class="section-title">✍️ Input Data Manual (Satu per Satu)</div>
+            <form id="formInputData">
+                <div class="grid-2">
+                    <div class="form-group"><label>Nama Lengkap</label><input id="inp_nama" required type="text"></div>
+                    <div class="form-group"><label>NISN</label><input id="inp_nisn" required type="text"></div>
+                    <div class="form-group"><label>Tempat Lahir</label><input id="inp_tempat" required type="text"></div>
+                    <div class="form-group"><label>Tanggal Lahir</label><input id="inp_tgl" required type="date"></div>
+                    <div class="form-group"><label>No. Peserta Ujian</label><input id="inp_nopes" required type="text"></div>
+                    <div class="form-group"><label>NPSN</label><input id="inp_npsn" required type="text"></div>
+                    <div class="form-group"><label>Jenis Kelamin</label><select id="inp_jk" required><option value="L">Laki-Laki</option><option value="P">Perempuan</option></select></div>
+                    <div class="form-group"><label>Kelas</label><input id="inp_kelas" required type="text"></div>
+                    <div class="form-group"><label>Tahun Ajaran</label><input id="inp_tahun" required type="text"></div>
+                    <div class="form-group"><label>Nama Ortu</label><input id="inp_ortu" required type="text"></div>
+                    <div class="form-group"><label>Alamat</label><input id="inp_alamat" required type="text"></div>
+                    <div class="form-group"><label>Password Login</label><input id="inp_pass" required type="text"></div>
+                </div>
+
+                <div class="section-title">Input Nilai Mata Pelajaran</div>
+                <div class="grid-2">
+                    <div class="form-group"><label>Al-Qur'an Hadist</label><input class="inp_nilai" id="n_quran" required type="number"></div>
+                    <div class="form-group"><label>Akidah Akhlak</label><input class="inp_nilai" id="n_akidah" required type="number"></div>
+                    <div class="form-group"><label>Fikih</label><input class="inp_nilai" id="n_fikih" required type="number"></div>
+                    <div class="form-group"><label>SKI</label><input class="inp_nilai" id="n_ski" required type="number"></div>
+                    <div class="form-group"><label>Pendidikan Pancasila</label><input class="inp_nilai" id="n_pancasila" required type="number"></div>
+                    <div class="form-group"><label>Bahasa Indonesia</label><input class="inp_nilai" id="n_bindo" required type="number"></div>
+                    <div class="form-group"><label>Bahasa Arab</label><input class="inp_nilai" id="n_barab" required type="number"></div>
+                    <div class="form-group"><label>Matematika</label><input class="inp_nilai" id="n_mtk" required type="number"></div>
+                    <div class="form-group"><label>IPAS</label><input class="inp_nilai" id="n_ipas" required type="number"></div>
+                    <div class="form-group"><label>PJOK</label><input class="inp_nilai" id="n_pjok" required type="number"></div>
+                    <div class="form-group"><label>SBdP</label><input class="inp_nilai" id="n_sbdp" required type="number"></div>
+                    <div class="form-group"><label>Bahasa Inggris</label><input class="inp_nilai" id="n_bing" required type="number"></div>
+                    <div class="form-group"><label>Bahasa Sunda</label><input class="inp_nilai" id="n_bsunda" required type="number"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Status Kelulusan</label>
+                    <select id="inp_status" required><option value="LULUS">LULUS</option><option value="TIDAK LULUS">TIDAK LULUS</option></select>
+                </div>
+                <button class="btn-primary" style="background: var(--islamic-green);" type="submit">SIMPAN DATA MANUAL</button>
+            </form>
+
+            <button class="btn-primary" onclick="location.reload()" style="background: var(--danger); margin-top:40px;" type="button">KEMBALI / KELUAR DASHBOARD</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzMaHvaTrnfkaVEjrSP0WqBAC1AlfCuJvwOTPLHWtQ-d1cPf_GMF4Tm84DFPlWChfXw/exec";
+        
+        let studentDataCache = null;
+        let isPengumumanLocked = true;
+        let pesanPengumuman = "Memuat data dari server...";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch(`${API_URL}?action=getSettings`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        isPengumumanLocked = res.data.locked;
+                        pesanPengumuman = res.data.message;
+                        
+                        const alertContainer = document.getElementById('alertSiswaContainer');
+                        if (isPengumumanLocked) {
+                            alertContainer.classList.remove('hidden');
+                            document.getElementById('alertSiswaMsg').innerText = pesanPengumuman;
+                        } else {
+                            alertContainer.classList.add('hidden');
+                        }
+
+                        document.getElementById('set_status').value = isPengumumanLocked ? 'kunci' : 'buka';
+                        document.getElementById('set_message').value = pesanPengumuman;
+                    }
+                }).catch(err => console.log("Gagal memuat pengaturan."));
+        });
+
+        function switchTab(type) {
+            document.getElementById('btnTabSiswa').classList.remove('active'); document.getElementById('btnTabGuru').classList.remove('active');
+            document.getElementById('formLoginSiswa').classList.add('hidden'); document.getElementById('formLoginGuru').classList.add('hidden');
+            if(type === 'siswa') { document.getElementById('btnTabSiswa').classList.add('active'); document.getElementById('formLoginSiswa').classList.remove('hidden'); } 
+            else { document.getElementById('btnTabGuru').classList.add('active'); document.getElementById('formLoginGuru').classList.remove('hidden'); }
+        }
+
+        document.getElementById('formSettings').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button'); btn.innerText = "Menyimpan..."; btn.disabled = true;
+            const payload = { action: 'saveSettings', data: { locked: document.getElementById('set_status').value === 'kunci', message: document.getElementById('set_message').value } };
+
+            fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(res => {
+                if(res.status === 'success') { alert("Pengaturan Berhasil Disimpan!\nHalaman akan dimuat ulang."); location.reload(); } else alert("Gagal: " + res.message);
+            }).catch(err => alert("Kesalahan jaringan.")).finally(() => { btn.innerText = "Simpan Pengaturan"; btn.disabled = false; });
+        });
+
+        function loadDataAdmin() {
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = "<tr><td colspan='6' style='text-align: center;'>Memuat data dari database...</td></tr>";
+            
+            fetch(`${API_URL}?action=getDataAdmin`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        if (res.data.length === 0) { tbody.innerHTML = "<tr><td colspan='6' style='text-align: center;'>Belum ada data siswa.</td></tr>"; return; }
+                        let html = '';
+                        res.data.forEach((siswa, index) => {
+                            let badgeClass = siswa.status.toUpperCase() === 'LULUS' ? 'badge-table-lulus' : 'badge-table-gagal';
+                            html += `<tr><td>${index + 1}</td><td><strong>${siswa.nama}</strong></td><td>${siswa.kelas}</td><td><span class="code-box">${siswa.nisn}</span></td><td><span class="code-box">${siswa.password}</span></td><td><span class="${badgeClass}">${siswa.status}</span></td></tr>`;
+                        });
+                        tbody.innerHTML = html;
+                    } else tbody.innerHTML = `<tr><td colspan='6' style='text-align: center; color: red;'>Gagal memuat data.</td></tr>`;
+                }).catch(err => tbody.innerHTML = "<tr><td colspan='6' style='text-align: center; color: red;'>Koneksi terputus.</td></tr>");
+        }
+
+        document.getElementById('formLoginSiswa').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (isPengumumanLocked) { alert("⏳ MAAF, PENGUMUMAN BELUM DIBUKA ATAU SEDANG TERKUNCI!\n\n" + pesanPengumuman); return; }
+
+            const nisn = document.getElementById('nisnSiswa').value, pass = document.getElementById('passSiswa').value;
+            document.getElementById('loader').style.display = 'block';
+            
+            fetch(`${API_URL}?action=loginSiswa&nisn=${nisn}&password=${pass}`)
+                .then(res => res.json())
+                .then(res => { document.getElementById('loader').style.display = 'none'; if(res.status === 'success') { studentDataCache = res.data; renderDashboardSiswa(res.data); } else alert(res.message); })
+                .catch(err => { document.getElementById('loader').style.display = 'none'; alert("Koneksi gagal."); });
+        });
+
+        document.getElementById('formLoginGuru').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const user = document.getElementById('userGuru').value, pass = document.getElementById('passGuru').value;
+            document.getElementById('loader').style.display = 'block';
+            fetch(`${API_URL}?action=loginGuru&user=${user}&pass=${pass}`)
+                .then(res => res.json())
+                .then(res => { 
+                    document.getElementById('loader').style.display = 'none'; 
+                    if(res.status === 'success') { 
+                        document.getElementById('login-portal').classList.add('hidden'); 
+                        document.getElementById('dashboard-guru').classList.remove('hidden'); 
+                        loadDataAdmin(); 
+                    } else alert(res.message); 
+                }).catch(err => alert("Koneksi gagal."));
+        });
+
+        function downloadTemplate() {
+            const header = "Nama Lengkap,Tempat Lahir,Tanggal Lahir (DD-MM-YYYY),NISN,No Peserta,NPSN,JK (L/P),Kelas,Tahun Ajaran,Nama Ortu,Alamat,Password,Status Kelulusan,Quran Hadist,Akidah Akhlak,Fikih,SKI,Pancasila,B Indonesia,B Arab,Matematika,IPAS,PJOK,SBdP,B Inggris,B Sunda\n";
+            const dummyData = "Ahmad Fulan,Bogor,15-08-2010,1234567890,12-345-678-9,20212345,L,VI,2025/2026,Budi,Jl. Raya Cariu No 1,15-08-2010,LULUS,90,88,92,85,90,95,80,85,90,92,88,85,90\n";
+            const blob = new Blob([header + dummyData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob)); link.setAttribute("download", "Template_Kelulusan_MIS_ALKHOERIYAH.csv");
+            link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        function uploadCsv() {
+            const fileInput = document.getElementById('fileCsv');
+            if(!fileInput.files.length) return alert("Pilih file CSV terlebih dahulu!");
+            const btn = document.getElementById('btnUploadCsv'); btn.innerText = "Memproses..."; btn.disabled = true;
+
+            Papa.parse(fileInput.files[0], {
+                header: true, skipEmptyLines: true,
+                complete: function(results) {
+                    const parsedData = results.data; const finalPayload = [];
+                    parsedData.forEach(row => {
+                        const vals = Object.values(row); let jumlah = 0;
+                        for(let i=13; i<=25; i++) { jumlah += parseFloat(vals[i] || 0); }
+                        const rata = (jumlah / 13).toFixed(2);
+                        const predikat = rata >= 90 ? 'A' : (rata >= 80 ? 'B' : (rata >= 70 ? 'C' : 'D'));
+                        finalPayload.push({
+                            nama: vals[0], tempatLahir: vals[1], tanggalLahir: vals[2], nisn: vals[3], noPeserta: vals[4], npsn: vals[5], jk: vals[6], kelas: vals[7], tahunAjaran: vals[8], ortu: vals[9], alamat: vals[10], password: vals[11], statusKelulusan: vals[12],
+                            quranHadist: vals[13], akidahAkhlak: vals[14], fikih: vals[15], ski: vals[16], pancasila: vals[17], bIndo: vals[18], bArab: vals[19], matematika: vals[20], ipas: vals[21], pjok: vals[22], sbdp: vals[23], bInggris: vals[24], bSunda: vals[25], jumlah: jumlah, rata: rata, predikat: predikat
+                        });
+                    });
+
+                    fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'importMassal', data: finalPayload })
+                    }).then(res => res.json()).then(res => {
+                        if(res.status === 'success') { alert(`Berhasil mengunggah ${res.count} data siswa!`); fileInput.value = ""; loadDataAdmin(); } else alert('Error: ' + res.message);
+                    }).catch(err => alert('Gagal mengirim data.')).finally(() => { btn.innerText = "Proses & Simpan Data CSV"; btn.disabled = false; });
+                }
+            });
+        }
+
+        document.getElementById('formInputData').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const inputs = document.querySelectorAll('.inp_nilai');
+            let jumlah = 0;
+            inputs.forEach(inp => jumlah += parseFloat(inp.value || 0));
+            const rata = (jumlah / 13).toFixed(2);
+            let predikat = rata >= 90 ? 'A' : (rata >= 80 ? 'B' : (rata >= 70 ? 'C' : 'D'));
+
+            const payload = {
+                action: 'simpanData',
+                data: {
+                    nama: document.getElementById('inp_nama').value, nisn: document.getElementById('inp_nisn').value, tempatLahir: document.getElementById('inp_tempat').value, tanggalLahir: document.getElementById('inp_tgl').value, noPeserta: document.getElementById('inp_nopes').value, npsn: document.getElementById('inp_npsn').value, jk: document.getElementById('inp_jk').value, kelas: document.getElementById('inp_kelas').value, tahunAjaran: document.getElementById('inp_tahun').value, ortu: document.getElementById('inp_ortu').value, alamat: document.getElementById('inp_alamat').value, password: document.getElementById('inp_pass').value, statusKelulusan: document.getElementById('inp_status').value,
+                    quranHadist: document.getElementById('n_quran').value, akidahAkhlak: document.getElementById('n_akidah').value, fikih: document.getElementById('n_fikih').value, ski: document.getElementById('n_ski').value, pancasila: document.getElementById('n_pancasila').value, bIndo: document.getElementById('n_bindo').value, bArab: document.getElementById('n_barab').value, matematika: document.getElementById('n_mtk').value, ipas: document.getElementById('n_ipas').value, pjok: document.getElementById('n_pjok').value, sbdp: document.getElementById('n_sbdp').value, bInggris: document.getElementById('n_bing').value, bSunda: document.getElementById('n_bsunda').value,
+                    jumlah: jumlah, rata: rata, predikat: predikat
+                }
+            };
+
+            const btnSubmit = document.querySelector('#formInputData button[type="submit"]');
+            btnSubmit.innerText = 'Menyimpan...'; btnSubmit.disabled = true;
+
+            fetch(API_URL, {
+                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+            }).then(res => res.json()).then(res => {
+                if(res.status === 'success') { alert('Data siswa berhasil disimpan!'); document.getElementById('formInputData').reset(); loadDataAdmin(); } else alert('Error: ' + res.message);
+            }).catch(err => alert('Gagal menyimpan data.')).finally(() => { btnSubmit.innerText = 'SIMPAN DATA MANUAL'; btnSubmit.disabled = false; });
+        });
+
+        function renderDashboardSiswa(data) {
+            document.getElementById('login-portal').classList.add('hidden'); document.getElementById('dashboard-siswa').classList.remove('hidden');
+            document.getElementById('view-nama').innerText = data.profil.nama; document.getElementById('view-nisn').innerText = data.profil.nisn; document.getElementById('view-noujian').innerText = data.profil.noPeserta;
+            
+            const viewBadge = document.getElementById('view-status-badge');
+            if(data.profil.statusKelulusan.toUpperCase() === 'LULUS') { 
+                viewBadge.className = 'status-card status-lulus'; viewBadge.innerHTML = '✅ DINYATAKAN LULUS'; 
+            } else { 
+                viewBadge.className = 'status-card status-gagal'; viewBadge.innerHTML = '❌ TIDAK LULUS'; 
+            }
+
+            const mapelOrder = [ 
+                {k: 'quranHadist', l: "Al-Qur'an Hadist"}, {k: 'akidahAkhlak', l: "Akidah Akhlak"}, {k: 'fikih', l: "Fikih"}, {k: 'ski', l: "Sejarah Kebudayaan Islam (SKI)"}, 
+                {k: 'pancasila', l: "Pendidikan Pancasila"}, {k: 'bIndo', l: "Bahasa Indonesia"}, {k: 'bArab', l: "Bahasa Arab"}, {k: 'matematika', l: "Matematika"}, 
+                {k: 'ipas', l: "Ilmu Pengetahuan Alam dan Sosial (IPAS)"}, {k: 'pjok', l: "PJOK"}, {k: 'sbdp', l: "Seni Budaya dan Prakarya (SBdP)"}, {k: 'bInggris', l: "Bahasa Inggris"}, {k: 'bSunda', l: "Muatan Lokal (Bahasa Sunda)"} 
+            ];
+            
+            let viewHtml = ''; 
+            mapelOrder.forEach(m => { viewHtml += `<tr><td>${m.l}</td><td>${data.nilai[m.k]}</td></tr>`; });
+            viewHtml += `<tr style="background:var(--navy);color:white;font-weight:bold;"><td>Jumlah</td><td>${data.nilai.jumlah}</td></tr>
+                         <tr style="background:var(--navy);color:white;font-weight:bold;"><td>Rata-rata</td><td>${data.nilai.rata}</td></tr>
+                         <tr style="background:var(--gold);color:white;font-weight:bold;"><td>Predikat</td><td>${data.nilai.predikat}</td></tr>`;
+            document.getElementById('view-nilai-table').innerHTML = viewHtml;
+        }
+    </script>
+</body>
+</html>

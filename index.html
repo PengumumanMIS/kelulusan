@@ -307,7 +307,7 @@
             const header = "Nama Lengkap,Tempat Lahir,Tanggal Lahir (DD-MM-YYYY),NISN,No Peserta,NPSN,JK (L/P),Kelas,Tahun Ajaran,Nama Ortu,Alamat,Password,Status Kelulusan,Quran Hadist,Akidah Akhlak,Fikih,SKI,Pancasila,B Indonesia,B Arab,Matematika,IPAS,PJOK,SBdP,B Inggris,B Sunda\n";
             const dummyData = "Ahmad Fulan,Bogor,15-08-2010,1234567890,12-345-678-9,20212345,L,VI,2025/2026,Budi,Jl. Raya Cariu No 1,15-08-2010,LULUS,90,88,92,85,90,95,80,85,90,92,88,85,90\n";
             const blob = new Blob([header + dummyData], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob)); link.setAttribute("download", "Template_Kelulusan_MIS_ALKHOERIYAH.csv");
+            const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob)); link.setAttribute("download", "Template_Kelulusan.csv");
             link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
